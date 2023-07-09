@@ -1,0 +1,18 @@
+{
+  "name": "threejs-earth",
+  "version": "1.0.0",
+  "description": "",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "scripts": {
+    "start": "parcel src/index.html --open",
+    "build": "parcel build src/index.html --public-url ./"
+  },
+  "dependencies": {
+    "dat.gui": "0.x",
+    "three": "0.x"
+  },
+  "devDependencies": {
+    "parcel": "^2.7.0"
+  },
+  "keywords": []
+}
