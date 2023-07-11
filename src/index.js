@@ -9,6 +9,8 @@ import { createCamera, createComposer, createRenderer, runApp } from "./core-uti
 
 // Other deps
 import Albedo from "./assets/Albedo.jpg"
+import Clouds from "./assets/Clouds.png"
+import Bump from "./assets/Bump.jpg"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -36,11 +38,12 @@ let renderer = createRenderer({ antialias: true }, (_renderer) => {
   // best practice: ensure output colorspace is in sRGB, see Color Management documentation:
   // https://threejs.org/docs/#manual/en/introduction/Color-management
   _renderer.outputEncoding = THREE.sRGBEncoding
+  _renderer.shadowMap.enabled = true
 })
 
 // Create the camera
 // Pass in fov, near, far and camera position respectively
-let camera = createCamera(45, 1, 1000, { x: 0, y: 0, z: 20 })
+let camera = createCamera(45, 1, 1000, { x: 0, y: 0, z: 30 })
 
 
 /**************************************************
@@ -56,17 +59,50 @@ let app = {
     this.controls.enableDamping = true
 
     this.dirLight = new THREE.DirectionalLight()
-    this.dirLight.position.set(-5, 5, 5)
+    this.dirLight.position.set(-50, 50, 0)
+    this.dirLight.castShadow = true
+    this.dirLight.shadow.mapSize.width = 2048
+    this.dirLight.shadow.mapSize.height = 2048
+    this.dirLight.shadow.camera.left = -10 // same size as sphere radius
+    this.dirLight.shadow.camera.right = 10
+    this.dirLight.shadow.camera.top = 10
+    this.dirLight.shadow.camera.bottom = -10
     scene.add(this.dirLight)
 
-    const albedoMap = await this.loadTexture(Albedo)
+    // workaround to simulate shadowIntensity, follow thread to know more: https://github.com/mrdoob/three.js/pull/14087#issuecomment-431003830
+    let shadowIntensity = 0.2 // between 0 and 1
+    let light2 = this.dirLight.clone()
+    this.dirLight.castShadow = true
+    light2.castShadow = false
+    this.dirLight.intensity = shadowIntensity
+    light2.intensity = 1 - shadowIntensity
+    scene.add(light2)
 
+    const albedoMap = await this.loadTexture(Albedo)
+    const cloudsMap = await this.loadTexture(Clouds)
+    const bumpMap = await this.loadTexture(Bump)
+    
     let earthGeo = new THREE.SphereGeometry(10, 64, 64)
     let earthMat = new THREE.MeshStandardMaterial({
-      map: albedoMap
+      map: albedoMap,
+      bumpMap: bumpMap,
+      bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
+    this.earth.receiveShadow = true
     scene.add(this.earth)
+
+    let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
+    let cloudsMat = new THREE.MeshStandardMaterial({
+      map: cloudsMap,
+      alphaMap: cloudsMap,
+      transparent: true,
+      alphaTest: 0.1, // needed for casting shadow
+      shadowSide: THREE.FrontSide // needed for 
+    })
+    this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
+    this.clouds.castShadow = true
+    scene.add(this.clouds)
 
     // GUI controls
     const gui = new dat.GUI()
@@ -91,6 +127,9 @@ let app = {
   updateScene(interval, elapsed) {
     this.controls.update()
     this.stats1.update()
+
+    this.earth.rotation.y += interval * 0.006
+    this.clouds.rotation.y += interval * 0.01
   }
 }
 
