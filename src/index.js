@@ -5,7 +5,7 @@ import Stats from "three/examples/jsm/libs/stats.module"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
 // Core boilerplate code deps
-import { createCamera, createComposer, createRenderer, runApp } from "./core-utils"
+import { createCamera, createRenderer, runApp } from "./core-utils"
 
 // Other deps
 import Albedo from "./assets/Albedo.jpg"
@@ -38,7 +38,6 @@ let renderer = createRenderer({ antialias: true }, (_renderer) => {
   // best practice: ensure output colorspace is in sRGB, see Color Management documentation:
   // https://threejs.org/docs/#manual/en/introduction/Color-management
   _renderer.outputEncoding = THREE.sRGBEncoding
-  _renderer.shadowMap.enabled = true
 })
 
 // Create the camera
@@ -60,23 +59,7 @@ let app = {
 
     this.dirLight = new THREE.DirectionalLight()
     this.dirLight.position.set(-50, 50, 0)
-    this.dirLight.castShadow = true
-    this.dirLight.shadow.mapSize.width = 2048
-    this.dirLight.shadow.mapSize.height = 2048
-    this.dirLight.shadow.camera.left = -10 // same size as sphere radius
-    this.dirLight.shadow.camera.right = 10
-    this.dirLight.shadow.camera.top = 10
-    this.dirLight.shadow.camera.bottom = -10
     scene.add(this.dirLight)
-
-    // workaround to simulate shadowIntensity, follow thread to know more: https://github.com/mrdoob/three.js/pull/14087#issuecomment-431003830
-    let shadowIntensity = 0.2 // between 0 and 1
-    let light2 = this.dirLight.clone()
-    this.dirLight.castShadow = true
-    light2.castShadow = false
-    this.dirLight.intensity = shadowIntensity
-    light2.intensity = 1 - shadowIntensity
-    scene.add(light2)
 
     const albedoMap = await this.loadTexture(Albedo)
     const cloudsMap = await this.loadTexture(Clouds)
@@ -89,7 +72,6 @@ let app = {
       bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
-    this.earth.receiveShadow = true
     scene.add(this.earth)
 
     let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
@@ -97,12 +79,27 @@ let app = {
       map: cloudsMap,
       alphaMap: cloudsMap,
       transparent: true,
-      alphaTest: 0.1, // needed for casting shadow
-      shadowSide: THREE.FrontSide // needed for 
     })
     this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
-    this.clouds.castShadow = true
     scene.add(this.clouds)
+
+    // shadowing of clouds, from https://discourse.threejs.org/t/how-to-cast-shadows-from-an-outer-sphere-to-an-inner-sphere/53732/6
+    // some notes of the negative light map done on the earth material to simulate shadows casted by clouds
+    // we need uTime so as to act as a means to calibrate the offset of the clouds shadows on earth(especially when earth and cloud rotate at different speeds)
+    // the way I need to use fracts here is to get a correct calculated result of the cloud texture offset as it moves,
+    // arrived at current method by doing the enumeration of cases (writing them down truly helps, don't keep everything in your head!)
+    earthMat.onBeforeCompile = function( shader ) {
+      // console.log(shader) // for checking shaderID
+      shader.uniforms.tClouds = { value: cloudsMap }
+      shader.uniforms.uTime = { value: 0 }
+      shader.fragmentShader = shader.fragmentShader.replace('#include <map_pars_fragment>', '#include <map_pars_fragment>\nuniform sampler2D tClouds;\nuniform float uTime;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        diffuseColor.rgb *= max(1.0 - texture2D(tClouds, vec2(fract(1.0 + (vMapUv.x - fract(uTime))), vMapUv.y)).r, 0.2 ); // Clamp it up so it doesn't get too dark unless you want
+      `);
+      // need save to userData.shader in order for our code to update values in the shader uniforms,
+      // reference from https://github.com/mrdoob/three.js/blob/master/examples/webgl_materials_modified.html
+      earthMat.userData.shader = shader
+    }
 
     // GUI controls
     const gui = new dat.GUI()
@@ -128,8 +125,18 @@ let app = {
     this.controls.update()
     this.stats1.update()
 
-    this.earth.rotation.y += interval * 0.006
+    this.earth.rotation.y += interval * 0.005
     this.clouds.rotation.y += interval * 0.01
+
+    const shader = this.earth.material.userData.shader
+    if ( shader ) {
+      // since the clouds is twice as fast as the earth
+      // we need to offset the movement of clouds texture on the earth by the same value of "speed" of the earth
+      // the value here is decided by mapping the value of one rotation in radians (2PI) to one rotation in uv.u (1.0)
+      // the length covered by texture.u in terms of uv(0..1) for a certain value of radians rotated is calculated as follows:
+      // (rotated_radians / 2PI) * 1.0
+      shader.uniforms.uTime.value += (interval * 0.005) / (2 * Math.PI)
+    }
   }
 }
 
