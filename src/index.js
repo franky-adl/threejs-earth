@@ -11,6 +11,7 @@ import { createCamera, createRenderer, runApp } from "./core-utils"
 import Albedo from "./assets/Albedo.jpg"
 import Clouds from "./assets/Clouds.png"
 import Bump from "./assets/Bump.jpg"
+import NightLights from "./assets/night_lights_modified.png"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -64,10 +65,13 @@ let app = {
     const albedoMap = await this.loadTexture(Albedo)
     const cloudsMap = await this.loadTexture(Clouds)
     const bumpMap = await this.loadTexture(Bump)
+    const lightsMap = await this.loadTexture(NightLights)
     
     let earthGeo = new THREE.SphereGeometry(10, 64, 64)
     let earthMat = new THREE.MeshStandardMaterial({
       map: albedoMap,
+      emissiveMap: lightsMap,
+      emissive: new THREE.Color(0xffff88),
       bumpMap: bumpMap,
       bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
@@ -83,6 +87,7 @@ let app = {
     this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
     scene.add(this.clouds)
 
+    // meshphysical.glsl.js is the shader used by MeshStandardMaterial: https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderLib/meshphysical.glsl.js
     // shadowing of clouds, from https://discourse.threejs.org/t/how-to-cast-shadows-from-an-outer-sphere-to-an-inner-sphere/53732/6
     // some notes of the negative light map done on the earth material to simulate shadows casted by clouds
     // we need uTime so as to act as a means to calibrate the offset of the clouds shadows on earth(especially when earth and cloud rotate at different speeds)
@@ -93,9 +98,20 @@ let app = {
       shader.uniforms.tClouds = { value: cloudsMap }
       shader.uniforms.uTime = { value: 0 }
       shader.fragmentShader = shader.fragmentShader.replace('#include <map_pars_fragment>', '#include <map_pars_fragment>\nuniform sampler2D tClouds;\nuniform float uTime;');
-      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
+        #ifdef USE_EMISSIVEMAP
+
+          vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
+          // show night lights where in the earth's shaded side
+          emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
+          totalEmissiveRadiance *= emissiveColor.rgb;
+
+        #endif
+
+        // negative light map to simulate cloud shadows onto earth
         diffuseColor.rgb *= max(1.0 - texture2D(tClouds, vec2(fract(1.0 + (vMapUv.x - fract(uTime))), vMapUv.y)).r, 0.2 ); // Clamp it up so it doesn't get too dark unless you want
-      `);
+      `)
+
       // need save to userData.shader in order for our code to update values in the shader uniforms,
       // reference from https://github.com/mrdoob/three.js/blob/master/examples/webgl_materials_modified.html
       earthMat.userData.shader = shader
