@@ -12,6 +12,7 @@ import Albedo from "./assets/Albedo.jpg"
 import Clouds from "./assets/Clouds.png"
 import Bump from "./assets/Bump.jpg"
 import NightLights from "./assets/night_lights_modified.png"
+import Ocean from "./assets/Ocean.png"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -66,12 +67,16 @@ let app = {
     const cloudsMap = await this.loadTexture(Clouds)
     const bumpMap = await this.loadTexture(Bump)
     const lightsMap = await this.loadTexture(NightLights)
+    const oceanMap = await this.loadTexture(Ocean)
     
     let earthGeo = new THREE.SphereGeometry(10, 64, 64)
     let earthMat = new THREE.MeshStandardMaterial({
       map: albedoMap,
       emissiveMap: lightsMap,
       emissive: new THREE.Color(0xffff88),
+      roughnessMap: oceanMap, // will get reversed in the shaders
+      metalness: 0.5, // gets multiplied with the texture values from metalness map
+      metalnessMap: oceanMap,
       bumpMap: bumpMap,
       bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
@@ -98,6 +103,20 @@ let app = {
       shader.uniforms.tClouds = { value: cloudsMap }
       shader.uniforms.uTime = { value: 0 }
       shader.fragmentShader = shader.fragmentShader.replace('#include <map_pars_fragment>', '#include <map_pars_fragment>\nuniform sampler2D tClouds;\nuniform float uTime;');
+      shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', `
+        float roughnessFactor = roughness;
+
+        #ifdef USE_ROUGHNESSMAP
+
+          vec4 texelRoughness = texture2D( roughnessMap, vRoughnessMapUv );
+          // reversing the black and white values because we provide the ocean map
+          texelRoughness = vec4(1.0) - texelRoughness;
+
+          // reads channel G, compatible with a combined OcclusionRoughnessMetallic (RGB) texture
+          roughnessFactor *= clamp(texelRoughness.g, 0.4, 1.0);
+
+        #endif
+      `);
       shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
         #ifdef USE_EMISSIVEMAP
 
