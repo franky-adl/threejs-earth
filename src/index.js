@@ -24,6 +24,9 @@ THREE.ColorManagement.enabled = true
  *************************************************/
 const params = {
   // general scene params
+  brightness: 2.2,
+  metalness: 0.5,
+  speedFactor: 1.0,
 }
 
 
@@ -59,8 +62,8 @@ let app = {
     this.controls = new OrbitControls(camera, renderer.domElement)
     this.controls.enableDamping = true
 
-    this.dirLight = new THREE.DirectionalLight()
-    this.dirLight.position.set(-50, 50, 0)
+    this.dirLight = new THREE.DirectionalLight(0xffffff, params.brightness)
+    this.dirLight.position.set(-50, 0, 30)
     scene.add(this.dirLight)
 
     const albedoMap = await this.loadTexture(Albedo)
@@ -68,6 +71,10 @@ let app = {
     const bumpMap = await this.loadTexture(Bump)
     const lightsMap = await this.loadTexture(NightLights)
     const oceanMap = await this.loadTexture(Ocean)
+
+    this.group = new THREE.Group()
+    // earth's axial tilt is 23.5 degrees
+    this.group.rotation.z = 23.5 / 360 * 2 * Math.PI
     
     let earthGeo = new THREE.SphereGeometry(10, 64, 64)
     let earthMat = new THREE.MeshStandardMaterial({
@@ -75,13 +82,13 @@ let app = {
       emissiveMap: lightsMap,
       emissive: new THREE.Color(0xffff88),
       roughnessMap: oceanMap, // will get reversed in the shaders
-      metalness: 0.5, // gets multiplied with the texture values from metalness map
+      metalness: params.metalness, // gets multiplied with the texture values from metalness map
       metalnessMap: oceanMap,
       bumpMap: bumpMap,
       bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
-    scene.add(this.earth)
+    this.group.add(this.earth)
 
     let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
     let cloudsMat = new THREE.MeshStandardMaterial({
@@ -90,7 +97,9 @@ let app = {
       transparent: true,
     })
     this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
-    scene.add(this.clouds)
+    this.group.add(this.clouds)
+
+    scene.add(this.group)
 
     // meshphysical.glsl.js is the shader used by MeshStandardMaterial: https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderLib/meshphysical.glsl.js
     // shadowing of clouds, from https://discourse.threejs.org/t/how-to-cast-shadows-from-an-outer-sphere-to-an-inner-sphere/53732/6
@@ -138,6 +147,13 @@ let app = {
 
     // GUI controls
     const gui = new dat.GUI()
+    gui.add(params, "brightness", 0.0, 5.0, 0.1).onChange((val) => {
+      this.dirLight.intensity = val
+    })
+    gui.add(params, "metalness", 0.0, 1.0, 0.05).onChange((val) => {
+      earthMat.metalness = val
+    })
+    gui.add(params, "speedFactor", 0.1, 20.0, 0.1)
 
     // Stats - show fps
     this.stats1 = new Stats()
@@ -160,8 +176,9 @@ let app = {
     this.controls.update()
     this.stats1.update()
 
-    this.earth.rotation.y += interval * 0.005
-    this.clouds.rotation.y += interval * 0.01
+    // use rotateY instead of rotation.y so as to rotate by axis Y local to each mesh
+    this.earth.rotateY(interval * 0.005 * params.speedFactor)
+    this.clouds.rotateY(interval * 0.01 * params.speedFactor)
 
     const shader = this.earth.material.userData.shader
     if ( shader ) {
@@ -170,7 +187,7 @@ let app = {
       // the value here is decided by mapping the value of one rotation in radians (2PI) to one rotation in uv.u (1.0)
       // the length covered by texture.u in terms of uv(0..1) for a certain value of radians rotated is calculated as follows:
       // (rotated_radians / 2PI) * 1.0
-      shader.uniforms.uTime.value += (interval * 0.005) / (2 * Math.PI)
+      shader.uniforms.uTime.value += (interval * 0.005 * params.speedFactor) / (2 * Math.PI)
     }
   }
 }
