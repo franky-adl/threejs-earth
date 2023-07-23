@@ -13,6 +13,8 @@ import Clouds from "./assets/Clouds.png"
 import Bump from "./assets/Bump.jpg"
 import NightLights from "./assets/night_lights_modified.png"
 import Ocean from "./assets/Ocean.png"
+import vertexShader from "./shaders/vertex.glsl"
+import fragmentShader from "./shaders/fragment.glsl"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -61,6 +63,13 @@ let app = {
     // OrbitControls
     this.controls = new OrbitControls(camera, renderer.domElement)
     this.controls.enableDamping = true
+    // disable zoom because currently the atmosphere coloring/size changes depending on the zoom level or point of view
+    // that's most probably because of the close the viewpoint gets to the atmosphere
+    // the z-value of normals on the fringe would start from more positive value,
+    // which affects the fragment shader calculations
+    this.controls.enableZoom = false
+
+    scene.background = new THREE.Color(0x000000)
 
     this.dirLight = new THREE.DirectionalLight(0xffffff, params.brightness)
     this.dirLight.position.set(-50, 0, 30)
@@ -99,6 +108,17 @@ let app = {
     this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
     this.group.add(this.clouds)
 
+    let atmosGeo = new THREE.SphereGeometry(12, 64, 64)
+    let atmosMat = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      // notice that by default, Three.js uses NormalBlending, where if your opacity of the output color gets lower, the displayed color might get whiter
+      blending: THREE.AdditiveBlending, // works better than setting transparent: true, because it avoids a weird dark edge around the earth
+      side: THREE.BackSide // this points the normal in opposite direction in vertex shader
+    })
+    this.atmos = new THREE.Mesh(atmosGeo, atmosMat)
+    this.group.add(this.atmos)
+
     scene.add(this.group)
 
     // meshphysical.glsl.js is the shader used by MeshStandardMaterial: https://github.com/mrdoob/three.js/blob/dev/src/renderers/shaders/ShaderLib/meshphysical.glsl.js
@@ -131,6 +151,7 @@ let app = {
 
           vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
           // show night lights where in the earth's shaded side
+          // actually when you rotate the scene, geometryNormal doesn't change per fragment while direction of light is rotated
           emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
           totalEmissiveRadiance *= emissiveColor.rgb;
 
@@ -138,6 +159,11 @@ let app = {
 
         // negative light map to simulate cloud shadows onto earth
         diffuseColor.rgb *= max(1.0 - texture2D(tClouds, vec2(fract(1.0 + (vMapUv.x - fract(uTime))), vMapUv.y)).r, 0.2 ); // Clamp it up so it doesn't get too dark unless you want
+
+        // adding small amount of atmospheric coloring to make it more realistic
+        float intensity = 1.05 - dot( geometryNormal, vec3( 0.0, 0.0, 1.0 ) );
+        vec3 atmosphere = vec3( 0.3, 0.6, 1.0 ) * pow(intensity, 3.0);
+        diffuseColor.rgb += atmosphere;
       `)
 
       // need save to userData.shader in order for our code to update values in the shader uniforms,
