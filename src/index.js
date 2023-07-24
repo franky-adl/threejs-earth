@@ -13,6 +13,7 @@ import Clouds from "./assets/Clouds.png"
 import Bump from "./assets/Bump.jpg"
 import NightLights from "./assets/night_lights_modified.png"
 import Ocean from "./assets/Ocean.png"
+import GaiaSky from "./assets/Gaia_EDR3_Dim.png"
 import vertexShader from "./shaders/vertex.glsl"
 import fragmentShader from "./shaders/fragment.glsl"
 
@@ -69,8 +70,6 @@ let app = {
     // which affects the fragment shader calculations
     this.controls.enableZoom = false
 
-    scene.background = new THREE.Color(0x000000)
-
     this.dirLight = new THREE.DirectionalLight(0xffffff, params.brightness)
     this.dirLight.position.set(-50, 0, 30)
     scene.add(this.dirLight)
@@ -80,6 +79,11 @@ let app = {
     const bumpMap = await this.loadTexture(Bump)
     const lightsMap = await this.loadTexture(NightLights)
     const oceanMap = await this.loadTexture(Ocean)
+    const envMap = await this.loadTexture(GaiaSky)
+    envMap.mapping = THREE.EquirectangularReflectionMapping
+    envMap.encoding = THREE.sRGBEncoding
+
+    scene.background = envMap
 
     this.group = new THREE.Group()
     // earth's axial tilt is 23.5 degrees
