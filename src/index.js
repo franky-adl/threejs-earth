@@ -13,7 +13,7 @@ import Clouds from "./assets/Clouds.png"
 import Bump from "./assets/Bump.jpg"
 import NightLights from "./assets/night_lights_modified.png"
 import Ocean from "./assets/Ocean.png"
-import GaiaSky from "./assets/Gaia_EDR3_Dim.png"
+import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
 import vertexShader from "./shaders/vertex.glsl"
 import fragmentShader from "./shaders/fragment.glsl"
 
@@ -27,8 +27,8 @@ THREE.ColorManagement.enabled = true
  *************************************************/
 const params = {
   // general scene params
-  brightness: 2.2,
-  metalness: 0.5,
+  brightness: 1.8,
+  metalness: 0.1,
   speedFactor: 1.0,
 }
 
@@ -45,7 +45,8 @@ let scene = new THREE.Scene()
 let renderer = createRenderer({ antialias: true }, (_renderer) => {
   // best practice: ensure output colorspace is in sRGB, see Color Management documentation:
   // https://threejs.org/docs/#manual/en/introduction/Color-management
-  _renderer.outputEncoding = THREE.sRGBEncoding
+  // _renderer.outputEncoding = THREE.sRGBEncoding
+  _renderer.outputColorSpace = THREE.SRGBColorSpace
 })
 
 // Create the camera
@@ -75,13 +76,14 @@ let app = {
     scene.add(this.dirLight)
 
     const albedoMap = await this.loadTexture(Albedo)
+    albedoMap.colorSpace = THREE.SRGBColorSpace
     const cloudsMap = await this.loadTexture(Clouds)
     const bumpMap = await this.loadTexture(Bump)
     const lightsMap = await this.loadTexture(NightLights)
     const oceanMap = await this.loadTexture(Ocean)
     const envMap = await this.loadTexture(GaiaSky)
     envMap.mapping = THREE.EquirectangularReflectionMapping
-    envMap.encoding = THREE.sRGBEncoding
+    envMap.colorSpace = THREE.SRGBColorSpace
 
     scene.background = envMap
 
@@ -165,8 +167,9 @@ let app = {
         diffuseColor.rgb *= max(1.0 - texture2D(tClouds, vec2(fract(1.0 + (vMapUv.x - fract(uTime))), vMapUv.y)).r, 0.2 ); // Clamp it up so it doesn't get too dark unless you want
 
         // adding small amount of atmospheric coloring to make it more realistic
-        float intensity = 1.05 - dot( geometryNormal, vec3( 0.0, 0.0, 1.0 ) );
-        vec3 atmosphere = vec3( 0.3, 0.6, 1.0 ) * pow(intensity, 3.0);
+        // fine tune the first constant for stronger or weaker effect
+        float intensity = 1.4 - dot( geometryNormal, vec3( 0.0, 0.0, 1.0 ) );
+        vec3 atmosphere = vec3( 0.3, 0.6, 1.0 ) * pow(intensity, 5.0);
         diffuseColor.rgb += atmosphere;
       `)
 
