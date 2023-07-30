@@ -27,7 +27,7 @@ THREE.ColorManagement.enabled = true
  *************************************************/
 const params = {
   // general scene params
-  brightness: 1.8,
+  sunIntensity: 1.8,
   metalness: 0.1,
   speedFactor: 1.0,
 }
@@ -71,7 +71,7 @@ let app = {
     // which affects the fragment shader calculations
     this.controls.enableZoom = false
 
-    this.dirLight = new THREE.DirectionalLight(0xffffff, params.brightness)
+    this.dirLight = new THREE.DirectionalLight(0xffffff, params.sunIntensity)
     this.dirLight.position.set(-50, 0, 30)
     scene.add(this.dirLight)
 
@@ -104,7 +104,7 @@ let app = {
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
     this.group.add(this.earth)
-
+    
     let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
     let cloudsMat = new THREE.MeshStandardMaterial({
       map: cloudsMap,
@@ -113,6 +113,10 @@ let app = {
     })
     this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
     this.group.add(this.clouds)
+    
+    // set initial rotational position of earth
+    this.earth.rotateY(-0.3)
+    this.clouds.rotateY(-0.3)
 
     let atmosGeo = new THREE.SphereGeometry(12, 64, 64)
     let atmosMat = new THREE.ShaderMaterial({
@@ -180,13 +184,13 @@ let app = {
 
     // GUI controls
     const gui = new dat.GUI()
-    gui.add(params, "brightness", 0.0, 5.0, 0.1).onChange((val) => {
+    gui.add(params, "sunIntensity", 0.0, 5.0, 0.1).onChange((val) => {
       this.dirLight.intensity = val
-    })
+    }).name("Sun Intensity")
     gui.add(params, "metalness", 0.0, 1.0, 0.05).onChange((val) => {
       earthMat.metalness = val
-    })
-    gui.add(params, "speedFactor", 0.1, 20.0, 0.1)
+    }).name("Ocean Metalness")
+    gui.add(params, "speedFactor", 0.1, 20.0, 0.1).name("Rotation Speed")
 
     // Stats - show fps
     this.stats1 = new Stats()

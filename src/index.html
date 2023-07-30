@@ -28,11 +28,84 @@
         pointer-events: none;
         transition: opacity 1s ease-in-out;
       }
+      #info-icon {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+      }
+      #tooltip {
+        background: #333;
+        color: white;
+        padding: 8px 8px;
+        font-size: 13px;
+        font-family: Arial, Helvetica, sans-serif;
+        border-radius: 4px;
+        border: 1px solid #9F9F9F66;
+        display: none;
+      }
+      #tooltip[data-show] {
+        display: block;
+      }
+      #tooltip a {
+        color: #92ccff;
+      }
+      ul {
+        margin-bottom: 0;
+        padding-left: 1rem;
+      }
     </style>
   </head>
   <body>
     <div id="container"></div>
     <div id="veil"></div>
+    <img src="./assets/icons8-info.svg" id="info-icon" />
+    <div id="tooltip" role="tooltip">
+      Earth texture maps are from Nasa,<br>
+      Space texture map is from ESA.<br>
+      Detailed attributions in README.md
+    </div>
     <script src="./index.js" type="module"></script>
+    <script src="https://unpkg.com/@popperjs/core@^2.0.0"></script>
+    <script>
+      const icon = document.querySelector('#info-icon');
+      const tooltip = document.querySelector('#tooltip');
+
+      // Pass the button, the tooltip, and some options, and Popper will do the
+      // magic positioning for you:
+      const popperInstance = Popper.createPopper(icon, tooltip, {
+        placement: 'top',
+        modifiers: [
+          {
+            name: 'offset',
+            options: {
+              offset: [0, 8],
+            },
+          },
+        ],
+      });
+
+      function show() {
+        tooltip.setAttribute('data-show', '');
+
+        // We need to tell Popper to update the tooltip position
+        // after we show the tooltip, otherwise it will be incorrect
+        popperInstance.update();
+      }
+
+      function hide() {
+        tooltip.removeAttribute('data-show');
+      }
+
+      const showEvents = ['mouseenter', 'focus'];
+      const hideEvents = ['mouseleave', 'blur'];
+
+      showEvents.forEach((event) => {
+        icon.addEventListener(event, show);
+      });
+
+      hideEvents.forEach((event) => {
+        icon.addEventListener(event, hide);
+      });
+    </script>
   </body>
 </html>
