@@ -100,6 +100,8 @@ export const runApp = (app, scene, renderer, camera, enableAnimation = false, un
         .then(() => {
             const veil = document.getElementById("veil")
             veil.style.opacity = 0
+            const progressBar = document.getElementById("progress-bar")
+            progressBar.style.opacity = 0
             return true
         })
         .then(animate)
@@ -175,4 +177,19 @@ export const createCamera = (
     camera.lookAt(camLookAt.x, camLookAt.y, camLookAt.z) // this only works when there's no OrbitControls
     camera.updateProjectionMatrix()
     return camera
+}
+
+/**
+ * 
+ * @param {*} frac [0..1] percentage of completion on the progress bar
+ * @param {*} delay number of miliseconds for the returned Promise to be resolved
+ * @returns new Promise that resolves after {delay} miliseconds to simulate a sense of actual loading
+ */
+export const updateLoadingProgressBar = async (frac, delay=200) => {
+    return new Promise(resolve => {
+        const progress = document.getElementById("progress")
+        // 200px is the width of the progress bar defined in index.html
+        progress.style.width = `${frac * 200}px`
+        setTimeout(resolve, delay)
+    })
 }

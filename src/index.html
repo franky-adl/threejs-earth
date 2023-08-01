@@ -28,6 +28,26 @@
         pointer-events: none;
         transition: opacity 1s ease-in-out;
       }
+      #progress-bar {
+        position: absolute;
+        width: 200px;
+        height: 5px;
+        left: 50vw;
+        top: 50vh;
+        transition: opacity 0.2s ease;
+        transform: translateX(-50%);
+        background-color: #333;
+      }
+      #progress {
+        position: absolute;
+        width: 0px;
+        height: 5px;
+        left: 0px;
+        top: 0px;
+        transition: width 0.2s ease;
+        /* transform: translateX(-50%); */
+        background-color: #848484;
+      }
       #info-icon {
         position: absolute;
         bottom: 1rem;
@@ -57,7 +77,9 @@
   </head>
   <body>
     <div id="container"></div>
-    <div id="veil"></div>
+    <div id="veil">
+      <div id="progress-bar"><div id="progress"></div></div>
+    </div>
     <img src="./assets/icons8-info.svg" id="info-icon" />
     <div id="tooltip" role="tooltip">
       Earth texture maps are from Nasa,<br>

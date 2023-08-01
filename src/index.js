@@ -5,7 +5,7 @@ import Stats from "three/examples/jsm/libs/stats.module"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls"
 
 // Core boilerplate code deps
-import { createCamera, createRenderer, runApp } from "./core-utils"
+import { createCamera, createRenderer, runApp, updateLoadingProgressBar } from "./core-utils"
 
 // Other deps
 import Albedo from "./assets/Albedo.jpg"
@@ -84,6 +84,8 @@ let app = {
     const envMap = await this.loadTexture(GaiaSky)
     envMap.mapping = THREE.EquirectangularReflectionMapping
     envMap.colorSpace = THREE.SRGBColorSpace
+    
+    await updateLoadingProgressBar(0.5)
 
     scene.background = envMap
 
@@ -198,6 +200,8 @@ let app = {
     this.stats1.domElement.style.cssText = "position:absolute;top:0px;left:0px;"
     // this.container is the parent DOM element of the threejs canvas element
     this.container.appendChild(this.stats1.domElement)
+
+    await updateLoadingProgressBar(1.0, 100)
   },
   async loadTexture(url) {
     this.textureLoader = this.textureLoader || new THREE.TextureLoader()
