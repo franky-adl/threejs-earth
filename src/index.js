@@ -75,6 +75,8 @@ let app = {
     this.dirLight.position.set(-50, 0, 30)
     scene.add(this.dirLight)
 
+    await updateLoadingProgressBar(0.1)
+
     const albedoMap = await this.loadTexture(Albedo)
     albedoMap.colorSpace = THREE.SRGBColorSpace
     const cloudsMap = await this.loadTexture(Clouds)
