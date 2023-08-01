@@ -1,0 +1,19 @@
+---
+- name: Deploy to MyAWS
+  hosts: myaws
+
+  tasks:
+  - name: Delete previous content
+    file:
+      state: absent
+      path: /srv/www/projects.arkon.digital/threejs/threejs-earth/
+
+  - name: Recreate directory
+    file:
+      path: /srv/www/projects.arkon.digital/threejs/threejs-earth
+      state: directory
+
+  - name: Upload latest build
+    copy:
+      src: ../dist/
+      dest: /srv/www/projects.arkon.digital/threejs/threejs-earth
