@@ -29,7 +29,7 @@ const params = {
   // general scene params
   sunIntensity: 1.8,
   metalness: 0.1,
-  speedFactor: 1.0,
+  speedFactor: 2.0,
 }
 
 
