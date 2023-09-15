@@ -45,7 +45,6 @@ let scene = new THREE.Scene()
 let renderer = createRenderer({ antialias: true }, (_renderer) => {
   // best practice: ensure output colorspace is in sRGB, see Color Management documentation:
   // https://threejs.org/docs/#manual/en/introduction/Color-management
-  // _renderer.outputEncoding = THREE.sRGBEncoding
   _renderer.outputColorSpace = THREE.SRGBColorSpace
 })
 
@@ -79,16 +78,25 @@ let app = {
 
     const albedoMap = await this.loadTexture(Albedo)
     albedoMap.colorSpace = THREE.SRGBColorSpace
+    await updateLoadingProgressBar(0.2)
+
     const cloudsMap = await this.loadTexture(Clouds)
+    await updateLoadingProgressBar(0.3)
+
     const bumpMap = await this.loadTexture(Bump)
+    await updateLoadingProgressBar(0.4)
+
     const lightsMap = await this.loadTexture(NightLights)
+    await updateLoadingProgressBar(0.5)
+
     const oceanMap = await this.loadTexture(Ocean)
+    await updateLoadingProgressBar(0.6)
+
     const envMap = await this.loadTexture(GaiaSky)
     envMap.mapping = THREE.EquirectangularReflectionMapping
     envMap.colorSpace = THREE.SRGBColorSpace
+    await updateLoadingProgressBar(0.7)
     
-    await updateLoadingProgressBar(0.5)
-
     scene.background = envMap
 
     this.group = new THREE.Group()
