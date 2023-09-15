@@ -1,9 +1,17 @@
 varying vec3 v_pos;
 varying vec3 vNormal;
+varying vec3 eyeVector;
+
 void main() {
     v_pos = position;
-    // normalMatrix is a matrix that is used to transform normals from object space to world space.
-    // result is that vNormal is consistent per fragment no matter how we rotate the scene
+    // modelMatrix transforms the coordinates local to the model into world space
+    vec4 mvPos = modelViewMatrix * vec4( position, 1.0 );
+
+    // normalMatrix is a matrix that is used to transform normals from object space to view space.
     vNormal = normalize( normalMatrix * normal );
-    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+    // vector pointing from camera to vertex in view space
+    eyeVector = normalize(mvPos.xyz);
+
+    gl_Position = projectionMatrix * mvPos;
 }

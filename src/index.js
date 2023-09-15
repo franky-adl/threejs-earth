@@ -30,6 +30,9 @@ const params = {
   sunIntensity: 1.8,
   metalness: 0.1,
   speedFactor: 2.0,
+  atmOpacity: { value: 0.7 },
+  atmPowFactor: { value: 4.1 },
+  atmMultiplier: { value: 9.5 },
 }
 
 
@@ -45,7 +48,6 @@ let scene = new THREE.Scene()
 let renderer = createRenderer({ antialias: true }, (_renderer) => {
   // best practice: ensure output colorspace is in sRGB, see Color Management documentation:
   // https://threejs.org/docs/#manual/en/introduction/Color-management
-  // _renderer.outputEncoding = THREE.sRGBEncoding
   _renderer.outputColorSpace = THREE.SRGBColorSpace
 })
 
@@ -65,11 +67,6 @@ let app = {
     // OrbitControls
     this.controls = new OrbitControls(camera, renderer.domElement)
     this.controls.enableDamping = true
-    // disable zoom because currently the atmosphere coloring/size changes depending on the zoom level or point of view
-    // that's most probably because of the close the viewpoint gets to the atmosphere
-    // the z-value of normals on the fringe would start from more positive value,
-    // which affects the fragment shader calculations
-    this.controls.enableZoom = false
 
     this.dirLight = new THREE.DirectionalLight(0xffffff, params.sunIntensity)
     this.dirLight.position.set(-50, 0, 30)
@@ -79,16 +76,25 @@ let app = {
 
     const albedoMap = await this.loadTexture(Albedo)
     albedoMap.colorSpace = THREE.SRGBColorSpace
+    await updateLoadingProgressBar(0.2)
+
     const cloudsMap = await this.loadTexture(Clouds)
+    await updateLoadingProgressBar(0.3)
+
     const bumpMap = await this.loadTexture(Bump)
+    await updateLoadingProgressBar(0.4)
+
     const lightsMap = await this.loadTexture(NightLights)
+    await updateLoadingProgressBar(0.5)
+
     const oceanMap = await this.loadTexture(Ocean)
+    await updateLoadingProgressBar(0.6)
+
     const envMap = await this.loadTexture(GaiaSky)
     envMap.mapping = THREE.EquirectangularReflectionMapping
     envMap.colorSpace = THREE.SRGBColorSpace
+    await updateLoadingProgressBar(0.7)
     
-    await updateLoadingProgressBar(0.5)
-
     scene.background = envMap
 
     this.group = new THREE.Group()
@@ -122,13 +128,18 @@ let app = {
     this.earth.rotateY(-0.3)
     this.clouds.rotateY(-0.3)
 
-    let atmosGeo = new THREE.SphereGeometry(12, 64, 64)
+    let atmosGeo = new THREE.SphereGeometry(12.5, 64, 64)
     let atmosMat = new THREE.ShaderMaterial({
       vertexShader: vertexShader,
       fragmentShader: fragmentShader,
+      uniforms: {
+        atmOpacity: params.atmOpacity,
+        atmPowFactor: params.atmPowFactor,
+        atmMultiplier: params.atmMultiplier
+      },
       // notice that by default, Three.js uses NormalBlending, where if your opacity of the output color gets lower, the displayed color might get whiter
       blending: THREE.AdditiveBlending, // works better than setting transparent: true, because it avoids a weird dark edge around the earth
-      side: THREE.BackSide // this points the normal in opposite direction in vertex shader
+      side: THREE.BackSide // such that it does not overlays on top of the earth; this points the normal in opposite direction in vertex shader
     })
     this.atmos = new THREE.Mesh(atmosGeo, atmosMat)
     this.group.add(this.atmos)
@@ -165,7 +176,12 @@ let app = {
 
           vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
           // show night lights where in the earth's shaded side
-          // actually when you rotate the scene, geometryNormal doesn't change per fragment while direction of light is rotated
+          // going through the shader calculations in the meshphysical shader chunks (mostly on the vertex side),
+          // we can confirm that geometryNormal is basically = normalize( vNormal ); where vNormal is the vertex normals in view space,
+          // derivation flow in the shader code is roughly:
+          // vec3 objectNormal = vec3( normal ); - from beginnormal_vertex.glsl.js
+          // transformedNormal = normalMatrix * objectNormal; - from defaultnormal_vertex.glsl.js
+          // vNormal = normalize( transformedNormal ); - from normal_vertex.glsl.js
           emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
           totalEmissiveRadiance *= emissiveColor.rgb;
 
@@ -195,6 +211,9 @@ let app = {
       earthMat.metalness = val
     }).name("Ocean Metalness")
     gui.add(params, "speedFactor", 0.1, 20.0, 0.1).name("Rotation Speed")
+    gui.add(params.atmOpacity, "value", 0.0, 1.0, 0.05).name("atmOpacity")
+    gui.add(params.atmPowFactor, "value", 0.0, 20.0, 0.1).name("atmPowFactor")
+    gui.add(params.atmMultiplier, "value", 0.0, 20.0, 0.1).name("atmMultiplier")
 
     // Stats - show fps
     this.stats1 = new Stats()
