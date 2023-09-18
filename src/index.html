@@ -80,54 +80,6 @@
     <div id="veil">
       <div id="progress-bar"><div id="progress"></div></div>
     </div>
-    <img src="./assets/icons8-info.svg" id="info-icon" />
-    <div id="tooltip" role="tooltip">
-      Earth texture maps are from NASA,<br>
-      Space texture map is from ESA.<br>
-      Detailed attributions in README.md
-    </div>
     <script src="./index.js" type="module"></script>
-    <script src="https://unpkg.com/@popperjs/core@^2.0.0"></script>
-    <script>
-      const icon = document.querySelector('#info-icon');
-      const tooltip = document.querySelector('#tooltip');
-
-      // Pass the button, the tooltip, and some options, and Popper will do the
-      // magic positioning for you:
-      const popperInstance = Popper.createPopper(icon, tooltip, {
-        placement: 'top',
-        modifiers: [
-          {
-            name: 'offset',
-            options: {
-              offset: [0, 8],
-            },
-          },
-        ],
-      });
-
-      function show() {
-        tooltip.setAttribute('data-show', '');
-
-        // We need to tell Popper to update the tooltip position
-        // after we show the tooltip, otherwise it will be incorrect
-        popperInstance.update();
-      }
-
-      function hide() {
-        tooltip.removeAttribute('data-show');
-      }
-
-      const showEvents = ['mouseenter', 'focus'];
-      const hideEvents = ['mouseleave', 'blur'];
-
-      showEvents.forEach((event) => {
-        icon.addEventListener(event, show);
-      });
-
-      hideEvents.forEach((event) => {
-        icon.addEventListener(event, hide);
-      });
-    </script>
   </body>
 </html>
