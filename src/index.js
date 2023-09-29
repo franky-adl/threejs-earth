@@ -11,7 +11,7 @@ import { createCamera, createRenderer, runApp, updateLoadingProgressBar } from "
 import { loadTexture } from "./common-utils"
 import Albedo from "./assets/Albedo.jpg"
 import Bump from "./assets/Bump.jpg"
-// import Clouds from "./assets/Clouds.png"
+import Clouds from "./assets/Clouds.png"
 // import NightLights from "./assets/night_lights_modified.png"
 // import Ocean from "./assets/Ocean.png"
 // import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
@@ -28,7 +28,7 @@ THREE.ColorManagement.enabled = true
  *************************************************/
 const params = {
   // general scene params
-  sunIntensity: 1.8, // brightness of the sun
+  sunIntensity: 1.3, // brightness of the sun
   speedFactor: 2.0, // rotation speed of the earth
   // metalness: 0.1,
   // atmOpacity: { value: 0.7 },
@@ -85,8 +85,8 @@ let app = {
     const bumpMap = await loadTexture(Bump)
     await updateLoadingProgressBar(0.3)
     
-    // const cloudsMap = await loadTexture(Clouds)
-    // await updateLoadingProgressBar(0.3)
+    const cloudsMap = await loadTexture(Clouds)
+    await updateLoadingProgressBar(0.4)
 
     // const lightsMap = await loadTexture(NightLights)
     // await updateLoadingProgressBar(0.5)
@@ -120,14 +120,13 @@ let app = {
     this.earth = new THREE.Mesh(earthGeo, earthMat)
     this.group.add(this.earth)
     
-    // let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
-    // let cloudsMat = new THREE.MeshStandardMaterial({
-    //   map: cloudsMap,
-    //   alphaMap: cloudsMap,
-    //   transparent: true,
-    // })
-    // this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
-    // this.group.add(this.clouds)
+    let cloudGeo = new THREE.SphereGeometry(10.05, 64, 64)
+    let cloudsMat = new THREE.MeshStandardMaterial({
+      alphaMap: cloudsMap,
+      transparent: true,
+    })
+    this.clouds = new THREE.Mesh(cloudGeo, cloudsMat)
+    this.group.add(this.clouds)
     
     // set initial rotational position of earth to get a good initial angle
     this.earth.rotateY(-0.3)
@@ -237,7 +236,7 @@ let app = {
 
     // use rotateY instead of rotation.y so as to rotate by axis Y local to each mesh
     this.earth.rotateY(interval * 0.005 * params.speedFactor)
-    // this.clouds.rotateY(interval * 0.01 * params.speedFactor)
+    this.clouds.rotateY(interval * 0.01 * params.speedFactor)
 
     // const shader = this.earth.material.userData.shader
     // if ( shader ) {
