@@ -10,8 +10,8 @@ import { createCamera, createRenderer, runApp, updateLoadingProgressBar } from "
 // Other deps
 import { loadTexture } from "./common-utils"
 import Albedo from "./assets/Albedo.jpg"
+import Bump from "./assets/Bump.jpg"
 // import Clouds from "./assets/Clouds.png"
-// import Bump from "./assets/Bump.jpg"
 // import NightLights from "./assets/night_lights_modified.png"
 // import Ocean from "./assets/Ocean.png"
 // import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
@@ -82,11 +82,11 @@ let app = {
     albedoMap.colorSpace = THREE.SRGBColorSpace
     await updateLoadingProgressBar(0.2)
 
+    const bumpMap = await loadTexture(Bump)
+    await updateLoadingProgressBar(0.3)
+    
     // const cloudsMap = await loadTexture(Clouds)
     // await updateLoadingProgressBar(0.3)
-
-    // const bumpMap = await loadTexture(Bump)
-    // await updateLoadingProgressBar(0.4)
 
     // const lightsMap = await loadTexture(NightLights)
     // await updateLoadingProgressBar(0.5)
@@ -109,13 +109,13 @@ let app = {
     let earthGeo = new THREE.SphereGeometry(10, 64, 64)
     let earthMat = new THREE.MeshStandardMaterial({
       map: albedoMap,
+      bumpMap: bumpMap,
+      bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
       // emissiveMap: lightsMap,
       // emissive: new THREE.Color(0xffff88),
       // roughnessMap: oceanMap, // will get reversed in the shaders
       // metalness: params.metalness, // gets multiplied with the texture values from metalness map
       // metalnessMap: oceanMap,
-      // bumpMap: bumpMap,
-      // bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
     this.group.add(this.earth)
