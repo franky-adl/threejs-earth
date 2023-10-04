@@ -12,8 +12,8 @@ import { loadTexture } from "./common-utils"
 import Albedo from "./assets/Albedo.jpg"
 import Bump from "./assets/Bump.jpg"
 import Clouds from "./assets/Clouds.png"
+import Ocean from "./assets/Ocean.png"
 // import NightLights from "./assets/night_lights_modified.png"
-// import Ocean from "./assets/Ocean.png"
 // import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
 // import vertexShader from "./shaders/vertex.glsl"
 // import fragmentShader from "./shaders/fragment.glsl"
@@ -30,7 +30,7 @@ const params = {
   // general scene params
   sunIntensity: 1.3, // brightness of the sun
   speedFactor: 2.0, // rotation speed of the earth
-  // metalness: 0.1,
+  metalness: 0.1,
   // atmOpacity: { value: 0.7 },
   // atmPowFactor: { value: 4.1 },
   // atmMultiplier: { value: 9.5 },
@@ -88,10 +88,10 @@ let app = {
     const cloudsMap = await loadTexture(Clouds)
     await updateLoadingProgressBar(0.4)
 
-    // const lightsMap = await loadTexture(NightLights)
-    // await updateLoadingProgressBar(0.5)
+    const oceanMap = await loadTexture(Ocean)
+    await updateLoadingProgressBar(0.5)
 
-    // const oceanMap = await loadTexture(Ocean)
+    // const lightsMap = await loadTexture(NightLights)
     // await updateLoadingProgressBar(0.6)
 
     // const envMap = await loadTexture(GaiaSky)
@@ -111,11 +111,11 @@ let app = {
       map: albedoMap,
       bumpMap: bumpMap,
       bumpScale: 0.03, // must be really small, if too high even bumps on the back side got lit up
+      roughnessMap: oceanMap, // will get reversed in the shaders
+      metalness: params.metalness, // gets multiplied with the texture values from metalness map
+      metalnessMap: oceanMap,
       // emissiveMap: lightsMap,
       // emissive: new THREE.Color(0xffff88),
-      // roughnessMap: oceanMap, // will get reversed in the shaders
-      // metalness: params.metalness, // gets multiplied with the texture values from metalness map
-      // metalnessMap: oceanMap,
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
     this.group.add(this.earth)
@@ -165,20 +165,20 @@ let app = {
         uniform sampler2D tClouds;
         uniform float uv_xOffset;
       `);
-      // shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', `
-      //   float roughnessFactor = roughness;
+      shader.fragmentShader = shader.fragmentShader.replace('#include <roughnessmap_fragment>', `
+        float roughnessFactor = roughness;
 
-      //   #ifdef USE_ROUGHNESSMAP
+        #ifdef USE_ROUGHNESSMAP
 
-      //     vec4 texelRoughness = texture2D( roughnessMap, vRoughnessMapUv );
-      //     // reversing the black and white values because we provide the ocean map
-      //     texelRoughness = vec4(1.0) - texelRoughness;
+          vec4 texelRoughness = texture2D( roughnessMap, vRoughnessMapUv );
+          // reversing the black and white values because we provide the ocean map
+          texelRoughness = vec4(1.0) - texelRoughness;
 
-      //     // reads channel G, compatible with a combined OcclusionRoughnessMetallic (RGB) texture
-      //     roughnessFactor *= clamp(texelRoughness.g, 0.4, 1.0);
+          // reads channel G, compatible with a combined OcclusionRoughnessMetallic (RGB) texture
+          roughnessFactor *= clamp(texelRoughness.g, 0.5, 1.0);
 
-      //   #endif
-      // `);
+        #endif
+      `);
       shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
         // #ifdef USE_EMISSIVEMAP
 
@@ -238,9 +238,9 @@ let app = {
     gui.add(params, "sunIntensity", 0.0, 5.0, 0.1).onChange((val) => {
       this.dirLight.intensity = val
     }).name("Sun Intensity")
-    // gui.add(params, "metalness", 0.0, 1.0, 0.05).onChange((val) => {
-    //   earthMat.metalness = val
-    // }).name("Ocean Metalness")
+    gui.add(params, "metalness", 0.0, 1.0, 0.05).onChange((val) => {
+      earthMat.metalness = val
+    }).name("Ocean Metalness")
     gui.add(params, "speedFactor", 0.1, 20.0, 0.1).name("Rotation Speed")
     // gui.add(params.atmOpacity, "value", 0.0, 1.0, 0.05).name("atmOpacity")
     // gui.add(params.atmPowFactor, "value", 0.0, 20.0, 0.1).name("atmPowFactor")
