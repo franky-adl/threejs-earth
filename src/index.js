@@ -158,6 +158,7 @@ let app = {
     // arrived at current method by doing the enumeration of cases (writing them down truly helps, don't keep everything in your head!)
     earthMat.onBeforeCompile = function( shader ) {
       shader.uniforms.tClouds = { value: cloudsMap }
+      shader.uniforms.tClouds.value.wrapS = THREE.RepeatWrapping;
       shader.uniforms.uv_xOffset = { value: 0 }
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `
         #include <common>
@@ -205,15 +206,14 @@ let app = {
         // We then darken the color value at Point X depending on the color value at Point Y,
         // that is the intensity of the clouds at Point Y.
         //
-        // As for each n radians Point X has rotated, Point Y would have rotated 2n radians.
-        // Thus uv.x of Point Y would always be = uv.x of Point X - n / 2π.
-        // Dividing n by 2π is to convert from radians(i.e. 0 to 2π) into the uv space(i.e. 0 to 1).
-        // The offset n / 2π would be passed into the shader program via a uniform variable.
-        // We do fract(uv_xOffset) because the value of 1 for uv.x means full circle,
-        // whenever uv_xOffset is larger than one, we can neglect offsetting 2π radians.
-        // Finally, adding 1 and then fract() it is to prevent getting a negative value for texture2D.
-        
-        float cloudsMapValue = texture2D(tClouds, vec2(fract(1.0 + (vMapUv.x - fract(uv_xOffset))), vMapUv.y)).r;
+        // Since the clouds are made to spin twice as fast as the earth,
+        // in order to get the correct shadows(clouds) position in this earth's fragment shader
+        // we need to minus earth's UV.x coordinate by uv_xOffset,
+        // which is calculated and explained in the updateScene()
+        // after minus by uv_xOffset, the result would be in the range of -1 to 1,
+        // we need to set RepeatWrapping for wrapS of the clouds texture so that texture2D still works for -1 to 0
+
+        float cloudsMapValue = texture2D(tClouds, vec2(vMapUv.x - uv_xOffset, vMapUv.y)).r;
         
         // The shadow should be more intense where the clouds are more intense,
         // thus we do 1.0 minus cloudsMapValue to obtain the shadowValue, which is multiplied to diffuseColor
@@ -267,9 +267,14 @@ let app = {
 
     const shader = this.earth.material.userData.shader
     if ( shader ) {
-      // As explained in the comments in the shader code, we have to convert the offset from radian space to uv space,
-      // thus dividing it by 2π
-      shader.uniforms.uv_xOffset.value += (interval * 0.005 * params.speedFactor) / (2 * Math.PI)
+      // As for each n radians Point X has rotated, Point Y would have rotated 2n radians.
+      // Thus uv.x of Point Y would always be = uv.x of Point X - n / 2π.
+      // Dividing n by 2π is to convert from radians(i.e. 0 to 2π) into the uv space(i.e. 0 to 1).
+      // The offset n / 2π would be passed into the shader program via the uniform variable: uv_xOffset.
+      // We do offset % 1 because the value of 1 for uv.x means full circle,
+      // whenever uv_xOffset is larger than one, offsetting 2π radians is like no offset at all.
+      let offset = (interval * 0.005 * params.speedFactor) / (2 * Math.PI)
+      shader.uniforms.uv_xOffset.value += offset % 1
     }
   }
 }
