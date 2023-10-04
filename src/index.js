@@ -13,7 +13,7 @@ import Albedo from "./assets/Albedo.jpg"
 import Bump from "./assets/Bump.jpg"
 import Clouds from "./assets/Clouds.png"
 import Ocean from "./assets/Ocean.png"
-// import NightLights from "./assets/night_lights_modified.png"
+import NightLights from "./assets/night_lights_modified.png"
 // import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
 // import vertexShader from "./shaders/vertex.glsl"
 // import fragmentShader from "./shaders/fragment.glsl"
@@ -91,8 +91,8 @@ let app = {
     const oceanMap = await loadTexture(Ocean)
     await updateLoadingProgressBar(0.5)
 
-    // const lightsMap = await loadTexture(NightLights)
-    // await updateLoadingProgressBar(0.6)
+    const lightsMap = await loadTexture(NightLights)
+    await updateLoadingProgressBar(0.6)
 
     // const envMap = await loadTexture(GaiaSky)
     // envMap.mapping = THREE.EquirectangularReflectionMapping
@@ -114,8 +114,8 @@ let app = {
       roughnessMap: oceanMap, // will get reversed in the shaders
       metalness: params.metalness, // gets multiplied with the texture values from metalness map
       metalnessMap: oceanMap,
-      // emissiveMap: lightsMap,
-      // emissive: new THREE.Color(0xffff88),
+      emissiveMap: lightsMap,
+      emissive: new THREE.Color(0xffff88),
     })
     this.earth = new THREE.Mesh(earthGeo, earthMat)
     this.group.add(this.earth)
@@ -180,22 +180,20 @@ let app = {
         #endif
       `);
       shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `
-        // #ifdef USE_EMISSIVEMAP
+        #ifdef USE_EMISSIVEMAP
 
-        //   vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
-        //   // show night lights where in the earth's shaded side
-        //   // going through the shader calculations in the meshphysical shader chunks (mostly on the vertex side),
-        //   // we can confirm that geometryNormal is basically = normalize( vNormal ); where vNormal is the vertex normals in view space,
-        //   // derivation flow in the shader code is roughly:
-        //   // vec3 objectNormal = vec3( normal ); - from beginnormal_vertex.glsl.js
-        //   // transformedNormal = normalMatrix * objectNormal; - from defaultnormal_vertex.glsl.js
-        //   // vNormal = normalize( transformedNormal ); - from normal_vertex.glsl.js
-        //   emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
-        //   totalEmissiveRadiance *= emissiveColor.rgb;
+          vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
+          // show night lights where in the earth's shaded side
+          // going through the shader calculations in the meshphysical shader chunks (mostly on the vertex side),
+          // we can confirm that geometryNormal is basically = normalize( vNormal ); where vNormal is the vertex normals in view space,
+          // derivation flow in the shader code is roughly:
+          // vec3 objectNormal = vec3( normal ); - from beginnormal_vertex.glsl.js
+          // transformedNormal = normalMatrix * objectNormal; - from defaultnormal_vertex.glsl.js
+          // vNormal = normalize( transformedNormal ); - from normal_vertex.glsl.js
+          emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
+          totalEmissiveRadiance *= emissiveColor.rgb;
 
-        // #endif
-
-        #include <emissivemap_fragment>
+        #endif
 
         // Methodology explanation:
         //
