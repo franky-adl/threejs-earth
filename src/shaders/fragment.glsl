@@ -1,4 +1,4 @@
-// reference from https://github.com/dataarts/webgl-globe/blob/8d746a3dbf95e57ec3c6c2c6effe920c95135253/globe/globe.js
+// reference from https://youtu.be/vM8M4QloVL0?si=CKD5ELVrRm3GjDnN
 varying vec3 vNormal;
 varying vec3 eyeVector;
 uniform float atmOpacity;

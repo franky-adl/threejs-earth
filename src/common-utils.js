@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader"
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
 
 global.THREE = THREE
 
@@ -34,6 +35,47 @@ export const loadHDRI = (url) => {
         const hdrEquirect = new RGBELoader().load(url, function () {
             hdrEquirect.mapping = THREE.EquirectangularReflectionMapping
             resolve(hdrEquirect)
+        })
+    })
+}
+
+/**
+ * 
+ * @param {string} url - Path to the texture, could be a locally imported image or a remote url
+ * @returns {Promise<THREE.Texture>}
+ * 
+ * Usage:
+ * const tex = await loadTexture(ImageUrl)
+ * tex.colorSpace = THREE.SRGBColorSpace
+ * this.quad = new THREE.Mesh(
+ *     new THREE.PlaneGeometry(),
+ *     new THREE.MeshBasicMaterial({ map: tex })
+ * )
+ */
+export const loadTexture = async (url) => {
+    let textureLoader = new THREE.TextureLoader()
+    return new Promise(resolve => {
+        textureLoader.load(url, texture => {
+            resolve(texture)
+        })
+    })
+}
+
+/**
+ * 
+ * @param {string} url - Path to locally imported glb or remote url
+ * @returns {Promise<Object>}
+ * 
+ * Usage:
+ * let { model } = await this.loadModel(ModelUrl)
+ * scene.add(model)
+ */
+export const loadModel = async (url) => {
+    let modelLoader = new GLTFLoader()
+    return new Promise(resolve => {
+        modelLoader.load(url, gltf => {
+            const result = { model: gltf.scene }
+            resolve(result)
         })
     })
 }
