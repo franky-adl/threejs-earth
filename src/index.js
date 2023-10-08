@@ -14,9 +14,9 @@ import Bump from "./assets/Bump.jpg"
 import Clouds from "./assets/Clouds.png"
 import Ocean from "./assets/Ocean.png"
 import NightLights from "./assets/night_lights_modified.png"
-// import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
 import vertexShader from "./shaders/vertex.glsl"
 import fragmentShader from "./shaders/fragment.glsl"
+import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -94,12 +94,11 @@ let app = {
     const lightsMap = await loadTexture(NightLights)
     await updateLoadingProgressBar(0.6)
 
-    // const envMap = await loadTexture(GaiaSky)
-    // envMap.mapping = THREE.EquirectangularReflectionMapping
-    // envMap.colorSpace = THREE.SRGBColorSpace
-    // await updateLoadingProgressBar(0.7)
+    const envMap = await loadTexture(GaiaSky)
+    envMap.mapping = THREE.EquirectangularReflectionMapping
+    await updateLoadingProgressBar(0.7)
     
-    // scene.background = envMap
+    scene.background = envMap
 
     // create group for easier manipulation of objects(ie later with clouds and atmosphere added)
     this.group = new THREE.Group()
