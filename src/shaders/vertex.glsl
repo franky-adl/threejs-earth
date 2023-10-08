@@ -1,9 +1,7 @@
-varying vec3 v_pos;
 varying vec3 vNormal;
 varying vec3 eyeVector;
 
 void main() {
-    v_pos = position;
     // modelMatrix transforms the coordinates local to the model into world space
     vec4 mvPos = modelViewMatrix * vec4( position, 1.0 );
 

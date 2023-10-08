@@ -15,8 +15,8 @@ import Clouds from "./assets/Clouds.png"
 import Ocean from "./assets/Ocean.png"
 import NightLights from "./assets/night_lights_modified.png"
 // import GaiaSky from "./assets/Gaia_EDR3_darkened.png"
-// import vertexShader from "./shaders/vertex.glsl"
-// import fragmentShader from "./shaders/fragment.glsl"
+import vertexShader from "./shaders/vertex.glsl"
+import fragmentShader from "./shaders/fragment.glsl"
 
 global.THREE = THREE
 // previously this feature is .legacyMode = false, see https://www.donmccurdy.com/2020/06/17/color-management-in-threejs/
@@ -31,9 +31,9 @@ const params = {
   sunIntensity: 1.3, // brightness of the sun
   speedFactor: 2.0, // rotation speed of the earth
   metalness: 0.1,
-  // atmOpacity: { value: 0.7 },
-  // atmPowFactor: { value: 4.1 },
-  // atmMultiplier: { value: 9.5 },
+  atmOpacity: { value: 0.7 },
+  atmPowFactor: { value: 4.1 },
+  atmMultiplier: { value: 9.5 },
 }
 
 
@@ -132,21 +132,21 @@ let app = {
     this.earth.rotateY(-0.3)
     this.clouds.rotateY(-0.3)
 
-    // let atmosGeo = new THREE.SphereGeometry(12.5, 64, 64)
-    // let atmosMat = new THREE.ShaderMaterial({
-    //   vertexShader: vertexShader,
-    //   fragmentShader: fragmentShader,
-    //   uniforms: {
-    //     atmOpacity: params.atmOpacity,
-    //     atmPowFactor: params.atmPowFactor,
-    //     atmMultiplier: params.atmMultiplier
-    //   },
-    //   // notice that by default, Three.js uses NormalBlending, where if your opacity of the output color gets lower, the displayed color might get whiter
-    //   blending: THREE.AdditiveBlending, // works better than setting transparent: true, because it avoids a weird dark edge around the earth
-    //   side: THREE.BackSide // such that it does not overlays on top of the earth; this points the normal in opposite direction in vertex shader
-    // })
-    // this.atmos = new THREE.Mesh(atmosGeo, atmosMat)
-    // this.group.add(this.atmos)
+    let atmosGeo = new THREE.SphereGeometry(12.5, 64, 64)
+    let atmosMat = new THREE.ShaderMaterial({
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      uniforms: {
+        atmOpacity: params.atmOpacity,
+        atmPowFactor: params.atmPowFactor,
+        atmMultiplier: params.atmMultiplier
+      },
+      // notice that by default, Three.js uses NormalBlending, where if your opacity of the output color gets lower, the displayed color might get whiter
+      blending: THREE.AdditiveBlending, // works better than setting transparent: true, because it avoids a weird dark edge around the earth
+      side: THREE.BackSide // such that it does not overlays on top of the earth; this points the normal in opposite direction in vertex shader
+    })
+    this.atmos = new THREE.Mesh(atmosGeo, atmosMat)
+    this.group.add(this.atmos)
 
     scene.add(this.group)
 
@@ -221,9 +221,9 @@ let app = {
 
         // adding small amount of atmospheric coloring to make it more realistic
         // fine tune the first constant for stronger or weaker effect
-        // float intensity = 1.4 - dot( geometryNormal, vec3( 0.0, 0.0, 1.0 ) );
-        // vec3 atmosphere = vec3( 0.3, 0.6, 1.0 ) * pow(intensity, 5.0);
-        // diffuseColor.rgb += atmosphere;
+        float intensity = 1.4 - dot( geometryNormal, vec3( 0.0, 0.0, 1.0 ) );
+        vec3 atmosphere = vec3( 0.3, 0.6, 1.0 ) * pow(intensity, 5.0);
+        diffuseColor.rgb += atmosphere;
       `)
 
       // need save to userData.shader in order to enable our code to update values in the shader uniforms,
@@ -240,9 +240,9 @@ let app = {
       earthMat.metalness = val
     }).name("Ocean Metalness")
     gui.add(params, "speedFactor", 0.1, 20.0, 0.1).name("Rotation Speed")
-    // gui.add(params.atmOpacity, "value", 0.0, 1.0, 0.05).name("atmOpacity")
-    // gui.add(params.atmPowFactor, "value", 0.0, 20.0, 0.1).name("atmPowFactor")
-    // gui.add(params.atmMultiplier, "value", 0.0, 20.0, 0.1).name("atmMultiplier")
+    gui.add(params.atmOpacity, "value", 0.0, 1.0, 0.05).name("atmOpacity")
+    gui.add(params.atmPowFactor, "value", 0.0, 20.0, 0.1).name("atmPowFactor")
+    gui.add(params.atmMultiplier, "value", 0.0, 20.0, 0.1).name("atmMultiplier")
 
     // Stats - show fps
     this.stats1 = new Stats()
