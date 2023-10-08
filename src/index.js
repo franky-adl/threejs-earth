@@ -182,14 +182,18 @@ let app = {
         #ifdef USE_EMISSIVEMAP
 
           vec4 emissiveColor = texture2D( emissiveMap, vEmissiveMapUv );
-          // show night lights where in the earth's shaded side
+
+          // Methodology of showing night lights only:
+          //
           // going through the shader calculations in the meshphysical shader chunks (mostly on the vertex side),
-          // we can confirm that geometryNormal is basically = normalize( vNormal ); where vNormal is the vertex normals in view space,
-          // derivation flow in the shader code is roughly:
-          // vec3 objectNormal = vec3( normal ); - from beginnormal_vertex.glsl.js
-          // transformedNormal = normalMatrix * objectNormal; - from defaultnormal_vertex.glsl.js
-          // vNormal = normalize( transformedNormal ); - from normal_vertex.glsl.js
+          // we can confirm that geometryNormal is the normalized normal in view space,
+          // for the night side of the earth, the dot product between geometryNormal and the directional light would be negative
+          // since the direction vector actually points from target to position of the DirectionalLight,
+          // for lit side of the earth, the reverse happens thus emissiveColor would be multiplied with 0.
+          // The smoothstep is to smoothen the change between night and day
+          
           emissiveColor *= 1.0 - smoothstep(-0.02, 0.0, dot(geometryNormal, directionalLights[0].direction));
+          
           totalEmissiveRadiance *= emissiveColor.rgb;
 
         #endif
